@@ -4,7 +4,7 @@
 """
 
 from tortoise import fields
-from tortoise.models import Model
+from .database import Model
 
 
 class XiuxianUser(Model):
