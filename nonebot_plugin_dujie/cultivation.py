@@ -10,7 +10,7 @@ from nonebot import on_command
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent
 from nonebot.typing import T_State
 
-from . import ELEMENT_COEFFICIENTS, REALMS
+from .constants import ELEMENT_COEFFICIENTS, REALMS
 from .models import XiuxianUser, XiuxianEvent
 
 # 修炼命令

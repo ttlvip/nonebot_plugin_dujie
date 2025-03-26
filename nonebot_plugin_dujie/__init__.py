@@ -1,66 +1,58 @@
 """
-道友请渡劫 - 修仙游戏插件
+道友请渡劫 - 修仙模拟器
 作者: biupiaa
 """
+
+from pathlib import Path
+
+from nonebot import get_driver
+from nonebot.plugin import PluginMetadata
+
+from .constants import ELEMENT_COEFFICIENTS, REALMS
+from .cultivation import cultivate
+from .database import init_db
+
+# 插件元数据
+__plugin_meta__ = PluginMetadata(
+    name="道友请渡劫",
+    description="一个修仙模拟器插件",
+    usage="""基础命令：
+    创建角色 - 开始你的修仙之旅
+    修炼 - 提升修为
+    渡劫 - 突破境界
+    门派相关 - 创建/加入/退出/查看门派
+    PK - 与其他道友切磋
+    探索 - 探索机缘""",
+    type="application",
+    homepage="https://github.com/yourusername/nonebot_plugin_dujie",
+    supported_adapters={"~onebot.v11"},
+)
+
+from .exploration import apply_event_effect, get_available_events
+
+from .pk import sect_pk, pk_command
+from .sect import appoint_elder, leave_sect, join_sect, sect_info, create_sect
+
+# 获取插件目录
+dir_ = Path(__file__).parent
+
+# 初始化数据库
+driver = get_driver()
+driver.on_startup(init_db)
+
+# 导入子模块
+from . import cultivation, sect, pk, tribulation
 
 import random
 import time
 
-import nonebot
 from nonebot import on_command
 from nonebot.adapters.onebot.v11 import (Bot, GroupMessageEvent, Message,
                                          MessageEvent)
 from nonebot.params import CommandArg
 from nonebot.typing import T_State
 
-from . import database
-from .exploration import (EXPLORATION_EVENTS, apply_event_effect,
-                          get_available_events)
 from .models import PkRecord, Sect, XiuxianEvent, XiuxianUser
-from . import cultivation, sect, pk, tribulation
-
-# 获取驱动器
-driver = nonebot.get_driver()
-
-# 在启动时初始化数据库
-@driver.on_startup
-async def init_db():
-    """初始化修仙游戏数据库"""
-    await database.init_db()
-    
-
-# 插件配置
-PLUGIN_NAME = "道友请渡劫"
-PLUGIN_DESCRIPTION = "一个基于群聊的修仙游戏"
-PLUGIN_USAGE = """
-基础命令：
-1. 开始修仙 - 创建角色
-2. 查看状态 - 查看当前状态
-3. 修炼 - 进行修炼
-4. 探索 - 探索秘境
-5. 渡劫 - 尝试突破境界
-"""
-
-# 境界定义
-REALMS = {
-    1: "练气期",
-    2: "筑基期",
-    3: "金丹期",
-    4: "元婴期",
-    5: "化神期",
-    6: "炼虚期",
-    7: "合体期",
-    8: "大乘期"
-}
-
-# 灵根系数
-ELEMENT_COEFFICIENTS = {
-    "金": 0.3,
-    "木": 0.2,
-    "水": 0.25,
-    "火": 0.25,
-    "土": 0.15
-}
 
 # 创建角色命令
 create_char = on_command("开始修仙", priority=5, block=True)
@@ -133,8 +125,6 @@ async def handle_check_status(bot: Bot, event: MessageEvent, state: T_State):
 """
     await check_status.finish(status_msg)
 
-# 修炼命令
-cultivate = on_command("修炼", priority=5, block=True)
 
 @cultivate.handle()
 async def handle_cultivate(bot: Bot, event: MessageEvent, state: T_State):
@@ -230,8 +220,6 @@ async def handle_explore(bot: Bot, event: MessageEvent, state: T_State):
     
     await explore.finish(result_msg)
 
-# 渡劫命令
-tribulation = on_command("渡劫", priority=5, block=True)
 
 @tribulation.handle()
 async def handle_tribulation(bot: Bot, event: MessageEvent, state: T_State):
@@ -284,8 +272,6 @@ async def handle_tribulation(bot: Bot, event: MessageEvent, state: T_State):
     else:
         await tribulation.finish("渡劫失败，道友修为受损！")
 
-# PK命令
-pk_command = on_command("修仙PK", aliases={"修仙pk", "道友PK", "道友pk"}, priority=5, block=True)
 
 @pk_command.handle()
 async def handle_pk(bot: Bot, event: MessageEvent, state: T_State, args: Message = CommandArg()):
@@ -388,8 +374,6 @@ async def handle_pk(bot: Bot, event: MessageEvent, state: T_State, args: Message
     
     await pk_command.finish(result_msg)
 
-# 创建门派命令
-create_sect = on_command("创建门派", priority=5, block=True)
 
 @create_sect.handle()
 async def handle_create_sect(bot: Bot, event: MessageEvent, state: T_State, args: Message = CommandArg()):
@@ -448,8 +432,6 @@ async def handle_create_sect(bot: Bot, event: MessageEvent, state: T_State, args
     
     await create_sect.finish(f"恭喜道友成功创建门派「{sect_name}」！\n你已成为该门派的掌门。")
 
-# 门派信息命令
-sect_info = on_command("门派信息", priority=5, block=True)
 
 @sect_info.handle()
 async def handle_sect_info(bot: Bot, event: MessageEvent, state: T_State):
@@ -503,8 +485,6 @@ async def handle_sect_info(bot: Bot, event: MessageEvent, state: T_State):
     
     await sect_info.finish(result)
 
-# 加入门派命令
-join_sect = on_command("加入门派", priority=5, block=True)
 
 @join_sect.handle()
 async def handle_join_sect(bot: Bot, event: MessageEvent, state: T_State, args: Message = CommandArg()):
@@ -548,8 +528,6 @@ async def handle_join_sect(bot: Bot, event: MessageEvent, state: T_State, args: 
     
     await join_sect.finish(f"恭喜道友成功加入门派「{sect_name}」！")
 
-# 退出门派命令
-leave_sect = on_command("退出门派", priority=5, block=True)
 
 @leave_sect.handle()
 async def handle_leave_sect(bot: Bot, event: MessageEvent, state: T_State):
@@ -603,8 +581,6 @@ async def handle_leave_sect(bot: Bot, event: MessageEvent, state: T_State):
     
     await leave_sect.finish(f"道友已退出门派「{sect_name}」。")
 
-# 任命长老命令
-appoint_elder = on_command("任命长老", priority=5, block=True)
 
 @appoint_elder.handle()
 async def handle_appoint_elder(bot: Bot, event: MessageEvent, state: T_State, args: Message = CommandArg()):
@@ -667,8 +643,6 @@ async def handle_appoint_elder(bot: Bot, event: MessageEvent, state: T_State, ar
     
     await appoint_elder.finish(f"已成功任命道友 {target_id} 为门派长老！")
 
-# 门派PK命令
-sect_pk = on_command("门派战", aliases={"门派pk", "门派PK"}, priority=5, block=True)
 
 @sect_pk.handle()
 async def handle_sect_pk(bot: Bot, event: MessageEvent, state: T_State, args: Message = CommandArg()):

@@ -21,7 +21,7 @@ TORTOISE_ORM = {
     "connections": {"default": DB_URL},
     "apps": {
         "models": {
-            "models": ["zhenxun.plugins.xiuxian.models"],
+            "models": ["zhenxun.plugins.nonebot_plugin_dujie.nonebot_plugin_dujie.models"],
             "default_connection": "default",
         }
     }

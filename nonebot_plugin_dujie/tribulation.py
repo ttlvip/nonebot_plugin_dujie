@@ -9,8 +9,8 @@ from nonebot import on_command
 from nonebot.adapters.onebot.v11 import Bot, MessageEvent
 from nonebot.typing import T_State
 
-from . import REALMS
-from .models import XiuxianUser, XiuxianEvent
+from .constants import REALMS
+from .models import XiuxianUser
 
 # 渡劫命令
 tribulation = on_command("渡劫", priority=5, block=True)
