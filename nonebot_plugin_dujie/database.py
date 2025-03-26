@@ -6,6 +6,7 @@
 import os
 from typing import List, Tuple, Any
 
+import nonebot
 from nonebot.utils import is_coroutine_callable
 from tortoise import Tortoise
 from tortoise.connection import connections
@@ -17,6 +18,7 @@ from .log import logger
 SCRIPT_METHOD: List[Tuple[str, Any]] = []
 MODELS: List[str] = []
 
+config = nonebot.get_driver().config
 
 class Model(Model_):
     """自动注册的模型基类"""
@@ -43,7 +45,7 @@ class DbConnectError(Exception):
 async def init_db():
     """初始化数据库连接"""
     # 获取数据库URL
-    db_url = os.getenv("DB_URL")
+    db_url = config.db_url
     if not db_url:
         raise DbUrlIsNone("数据库配置为空，请在.env.dev中配置DB_URL...")
     
