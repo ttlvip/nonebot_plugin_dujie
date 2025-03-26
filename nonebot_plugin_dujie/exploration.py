@@ -2,6 +2,13 @@
 修仙游戏探索事件模块
 作者: biupiaa
 """
+import random
+
+from nonebot import on_command
+from nonebot.adapters.onebot.v11 import (Bot, MessageEvent)
+from nonebot.typing import T_State
+
+from .models import XiuxianEvent, XiuxianUser
 
 # 探索事件库
 EXPLORATION_EVENTS = [
@@ -27,7 +34,7 @@ EXPLORATION_EVENTS = [
         "condition": lambda u: True,
         "effect": lambda u: {"cultivation": 50, "karma": 5}
     },
-    
+
     # 初级事件 - 筑基期以上可遇
     {
         "name": "古修士洞府",
@@ -50,7 +57,7 @@ EXPLORATION_EVENTS = [
         "condition": lambda u: u.level >= 2,
         "effect": lambda u: {"cultivation": -50, "karma": -10}
     },
-    
+
     # 中级事件 - 金丹期以上可遇
     {
         "name": "域外天魔",
@@ -73,7 +80,7 @@ EXPLORATION_EVENTS = [
         "condition": lambda u: u.level >= 3,
         "effect": lambda u: {"cultivation": 300, "karma": 80}
     },
-    
+
     # 高级事件 - 元婴期以上可遇
     {
         "name": "上古遗迹",
@@ -96,7 +103,7 @@ EXPLORATION_EVENTS = [
         "condition": lambda u: u.level >= 4,
         "effect": lambda u: {"cultivation": 1000, "karma": 150}
     },
-    
+
     # 特殊事件 - 化神期以上可遇
     {
         "name": "远古战场",
@@ -119,7 +126,7 @@ EXPLORATION_EVENTS = [
         "condition": lambda u: u.level >= 5,
         "effect": lambda u: {"cultivation": 2000, "karma": 500}
     },
-    
+
     # 顶级事件 - 炼虚期以上可遇
     {
         "name": "飞升遗址",
@@ -142,7 +149,7 @@ EXPLORATION_EVENTS = [
         "condition": lambda u: u.level >= 6,
         "effect": lambda u: {"cultivation": int(u.cultivation * 0.5), "karma": 800}
     },
-    
+
     # 极限事件 - 合体期以上可遇
     {
         "name": "仙人洞府",
@@ -160,6 +167,7 @@ EXPLORATION_EVENTS = [
     }
 ]
 
+
 # 随机获取可用事件
 def get_available_events(user):
     """获取可用事件列表
@@ -171,6 +179,7 @@ def get_available_events(user):
         可用事件列表
     """
     return [e for e in EXPLORATION_EVENTS if e["condition"](user)]
+
 
 # 处理文字效果描述
 def get_effect_desc(effects):
@@ -192,6 +201,55 @@ def get_effect_desc(effects):
             effect_desc.append(f"获得法宝：{value}")
     return effect_desc
 
+
+# 探索命令
+explore = on_command("探索", priority=5, block=True)
+
+
+@explore.handle()
+async def handle_explore(bot: Bot, event: MessageEvent, state: T_State):
+    """处理探索命令"""
+    user_id = str(event.user_id)
+
+    # 获取用户数据
+    user = await XiuxianUser.get_or_none(user_id=user_id)
+    if not user:
+        await explore.finish("道友还未创建角色，请先使用「开始修仙」命令！")
+        return
+
+    # 从探索模块获取可用事件
+    available_events = get_available_events(user)
+    if not available_events:
+        await explore.finish("道友暂时没有遇到任何机缘。")
+        return
+
+    # 随机选择一个事件
+    selected_event = random.choice(available_events)
+
+    # 应用事件效果
+    result = await apply_event_effect(user, selected_event)
+
+    # 记录事件
+    await XiuxianEvent.create(
+        user=user,
+        event_type="探索",
+        event_name=result["name"],
+        exp_change=0,  # 修为变化已在apply_event_effect中处理
+        karma_change=0  # 功德变化已在apply_event_effect中处理
+    )
+
+    # 构建结果消息
+    result_msg = f"""【{result['name']}】
+{result['description']}
+
+事件结果:
+"""
+    for effect in result['effects']:
+        result_msg += f"- {effect}\n"
+
+    await explore.finish(result_msg)
+
+
 # 应用事件效果到用户
 async def apply_event_effect(user, event):
     """应用事件效果到用户
@@ -204,7 +262,7 @@ async def apply_event_effect(user, event):
         事件效果描述
     """
     effects = event["effect"](user)
-    
+
     # 处理基础属性
     for key, value in effects.items():
         if key in ["cultivation", "karma"]:
@@ -214,12 +272,12 @@ async def apply_event_effect(user, event):
             if not isinstance(user.artifacts, list):
                 user.artifacts = []
             user.artifacts.append(value)
-    
+
     await user.save()
-    
+
     # 返回效果描述
     return {
         "name": event["name"],
         "description": event["description"],
         "effects": get_effect_desc(effects)
-    } 
+    }
